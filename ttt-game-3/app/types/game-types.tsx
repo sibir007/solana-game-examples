@@ -15,12 +15,14 @@ export type GameState = GameSlot[];
 
 export interface TrickProps{
   id: number;
-  color: string
+  color: string;
   disabled?: boolean;
+  currentSlotId: number
 }
 
 export interface GameStackProps{
   id: number;
+  drgTirckDisabled?: boolean;
   
 }
 

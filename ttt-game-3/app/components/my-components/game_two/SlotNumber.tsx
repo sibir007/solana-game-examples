@@ -1,9 +1,9 @@
-import { Center, Text } from "@chakra-ui/react";
+import { Center, Tag, Text } from "@chakra-ui/react";
 
 export function SlotNumber({children}: React.PropsWithChildren<{}>) {
     return (
         <Center>
-            <Text fontSize='sm'>
+            <Text fontSize='xs' textColor='white'>
                 { children }
             </Text>
         </Center>

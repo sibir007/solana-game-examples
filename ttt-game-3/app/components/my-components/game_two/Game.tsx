@@ -1,42 +1,43 @@
 import React, { ChangeEvent, MouseEventHandler, useState } from "react";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { Board } from "@/components/my-components/game_two/Board";
 import { DraggableTrick } from './DNDComponents';
 import { DroppableGemeStack } from "@/components/my-components/game_two/DNDComponents";
-import { useGameState } from "@/contexts/TTTGameStateProvider_2";
-// import { GameSlot, GameState, GameTrick } from "@/types/game-types";
-import { Button, HStack, Input, InputGroup, InputRightElement, VStack, Wrap, WrapItem, Text, Center, Flex, Spacer } from "@chakra-ui/react";
+import { useGameState, game } from "@/contexts/TTTGameStateProvider_2";
+import { Button, HStack, Input, InputGroup, InputRightElement, VStack, Wrap, WrapItem, Text, Center, Flex, Spacer, Box, ButtonGroup, FormControl, FormLabel, Tag, TagLabel, Badge } from "@chakra-ui/react";
 
 import { set } from "@coral-xyz/anchor/dist/cjs/utils/features";
 import { useToast } from '@chakra-ui/react'
-import { Game, GameLine, GameSlot, GameState } from "@/types/game";
+import { type GameStateForUI, type GameLineForUI, GameSlotForUI } from "@/types/game_2";
 import { SlotNumber } from "./SlotNumber";
 import { useWallet } from "@solana/wallet-adapter-react"
+import { BOARD_HALF, CONVERTED_BOARD, CONVERTING_SCHEME_BOARD } from "@/types/gui-types";
+import { BoardAndOut } from "./Board";
 
 
 
 
 
 export function GameComponent() {
-    const { game } = useGameState();
-    const [gameState, setGameState] = useState(deepCopy(game));
+    const { gameState, setGameState } = useGameState();
     const [firstPlayerID, setFirstPlayerID] = useState('');
     const [secondPlayerID, setSecondPlayerID] = useState('');
     const toast = useToast();
+    const [LOCAL_PLAYER_ID, setLocalPlayerId] = useState('');
+    const [REMOTE_PLAYER_ID, setRemotePlayerId] = useState('');
 
-    const LOCAL_PLAYER_ID = '1';
-    const REMOTE_PLAYER_ID = '2';
+    const remotePlayerId = 'remote'
+    const localPlayerId = 'local';
 
     // game global state
-    const GAME_STATE = gameState?.state;
+    const GAME_STATE = gameState.state;
     const FIRST_PLAYER_ID = gameState?.GameBoard.players.gamePlayers.first?.id;
     const SECOND_PLAYER_ID = gameState?.GameBoard.players.gamePlayers.second?.id;
     const CUBE_1 = gameState?.cube1State;
     const CUBE_2 = gameState?.cube2State;
     const CURRENT_PLAYER_ID = gameState?.currentPlayerIdToMakeMove;
     const MOVE_COUNT = gameState?.moveCount;
-    const convertedBoard: CONVERTED_BOARD = convertGameLine(gameState?.GameBoard.gameBordLine!, LOCAL_PLAYER_ID, FIRST_PLAYER_ID || LOCAL_PLAYER_ID)
-
+    const convertedBoard: CONVERTED_BOARD = convertGameLine(gameState.GameBoard.gameBordLine.gameBordLine, LOCAL_PLAYER_ID, FIRST_PLAYER_ID || LOCAL_PLAYER_ID)
+    // convertedBoard.left[1][0].gameTricks
 
     function handleChangeInputFirstPlayerID(event: ChangeEvent<HTMLInputElement>): void {
         setFirstPlayerID(event.target.value);
@@ -45,359 +46,293 @@ export function GameComponent() {
         setSecondPlayerID(event.target.value);
     }
 
-    function handleClickSetLocalPlayer(): void {
-        try {
-            game?.acceptGame(LOCAL_PLAYER_ID);
-            // const newGameState = gameState;
-            const newGameState = deepCopy(game);
-            setGameState(newGameState!);
-            toast({
-                title: "Local player set",
-                description: `Local player ID set to ${LOCAL_PLAYER_ID}`,
-                status: "success",
-                duration: 9000,
-                isClosable: true,
-            });
-        } catch (error) {
-            toast({
-                title: "Error setting local player",
-                description: (error as Error).message,
-                status: "error",
-                duration: 9000,
-                isClosable: true,
-            });
-            console.error("Error setting local player:", error);
-        }
 
-    }
-
-    function handleClickSetRemotePlayer(): void {
+    function prioritizeLocal(): void {
         try {
-            game?.acceptGame(REMOTE_PLAYER_ID);
-            const newGameState = deepCopy(game);
+            game.determinePlayersTurnOrder(localPlayerId);
+            const newGameState = game.cloneForUI();
             setGameState(newGameState);
             toast({
-                title: "Remote player set",
-                description: `Remote player ID set to ${REMOTE_PLAYER_ID}`,
+                title: "Prioritization by local player done",
+                // description: `Prioritization by local player completed`,
                 status: "success",
-                duration: 9000,
+                duration: 6000,
                 isClosable: true,
             });
         } catch (error) {
             toast({
-                title: "Error setting remote player",
+                title: "Error in prioritization by locla player",
                 description: (error as Error).message,
                 status: "error",
-                duration: 9000,
+                duration: 6000,
                 isClosable: true,
             });
-            console.error("Error setting remote player:", error);
-        }
-
-    }
-
-    function handlePrioritizationByFirstPlayer(): void {
-        try {
-            game?.prioritizationByFirstPlayer(firstPlayerID);
-            const newGameState = deepCopy(game);
-            setGameState(newGameState);
-            toast({
-                title: "Prioritization by first player done",
-                description: `Prioritization by first player completed`,
-                status: "success",
-                duration: 9000,
-                isClosable: true,
-            });
-        } catch (error) {
-            toast({
-                title: "Error in prioritization by first player",
-                description: (error as Error).message,
-                status: "error",
-                duration: 9000,
-                isClosable: true,
-            });
-            console.error("Error in prioritization by first player:", error);
+            console.error("Error in prioritization by local player:", error);
         }
     }
 
-    function handlePrioritizationBySecondPlayer(): void {
+    function prioritizeRemote(): void {
         try {
-            game?.prioritizationBySecondPlayer(secondPlayerID);
-            const newGameState = deepCopy(game);
+            game?.determinePlayersTurnOrder(remotePlayerId);
+            const newGameState = game.cloneForUI();
             setGameState(newGameState);
             toast({
-                title: "Prioritization by second player done",
-                description: `Prioritization by second player completed`,
+                title: "Prioritization by remote player done",
+                // description: `Prioritization by remote player completed`,
                 status: "success",
-                duration: 9000,
+                duration: 6000,
                 isClosable: true,
             });
         } catch (error) {
             toast({
-                title: "Error in prioritization by second player",
+                title: "Error in prioritization by remote player",
                 description: (error as Error).message,
                 status: "error",
-                duration: 9000,
+                duration: 6000,
                 isClosable: true,
             });
-            console.error("Error in prioritization by second player:", error);
+            console.error("Error in prioritization by remote player:", error);
         }
     }
 
     function handleRoollCubes(): void {
-        throw new Error("Function not implemented.");
+        try {
+
+            game.roollCubes(CURRENT_PLAYER_ID!);
+            setGameState(game.cloneForUI());
+            toast({
+                title: "Roll done",
+                // description: `Roll completed`,
+                status: "success",
+                duration: 6000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Error in roll",
+                description: (error as Error).message,
+                status: "error",
+                duration: 6000,
+                isClosable: true,
+            });
+            console.error("Error in roll:", error);
+        }
+    }
+
+    // function handleClickRemove(): void {
+    //     game.removeWhait();
+    //     setGameState(game.cloneForUI())
+    // }
+
+    function handleDragEnd(event: DragEndEvent) {
+        const { active, over } = event;
+        // console.log(active.data.current?.currentSlotId);
+        if (!over) {
+            return;
+        }
+        if (active.data.current?.currentSlotId === over.id) {
+            return
+        }
+        // console.log("drag end", active.id, over.id);
+        try {
+
+            game?.moveTrick(CURRENT_PLAYER_ID!, active.id as number, active.data.current?.currentSlotId, over.id as number)
+            setGameState(game.cloneForUI())
+            toast({
+                title: "Move done",
+                // description: `Move completed`,
+                status: "success",
+                duration: 6000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Error in moveTrick",
+                description: (error as Error).message,
+                status: "error",
+                duration: 6000,
+                isClosable: true,
+            });
+            console.error("Error in moveTrick:", error);
+        }
+
+
+    }
+
+    function acceptLocal(): void {
+        if (LOCAL_PLAYER_ID) {
+            toast({
+                title: "Local player already accept game",
+                // description: (error as Error).message,
+                status: "error",
+                duration: 6000,
+                isClosable: true,
+            });
+            return
+        }
+        try {
+            game.acceptGame(localPlayerId);
+            setLocalPlayerId(localPlayerId)
+            const newGameState = game.cloneForUI();
+            setGameState(newGameState!);
+            toast({
+                title: `Local player ID set to ${localPlayerId}`,
+                // description: `Local player ID set to ${localPlayerId}`,
+                status: "success",
+                duration: 6000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Error local player game accept",
+                description: (error as Error).message,
+                status: "error",
+                duration: 6000,
+                isClosable: true,
+            });
+            console.error("Error local player game accept:", error);
+        }
+    }
+
+    function acceptRemote(): void {
+        if (REMOTE_PLAYER_ID) {
+            toast({
+                title: "Remote player already accept game",
+                // description: (error as Error).message,
+                status: "error",
+                duration: 6000,
+                isClosable: true,
+            });
+            return
+        }
+        try {
+            game.acceptGame(remotePlayerId);
+            setRemotePlayerId(remotePlayerId)
+            const newGameState = game.cloneForUI();
+            setGameState(newGameState!);
+            toast({
+                title: `Remot player ID set to ${remotePlayerId}`,
+                // description: `Remote player ID set to ${remotePlayerId}`,
+                status: "success",
+                duration: 6000,
+                isClosable: true,
+            });
+        } catch (error) {
+            toast({
+                title: "Error remote player game accept",
+                description: (error as Error).message,
+                status: "error",
+                duration: 6000,
+                isClosable: true,
+            });
+            console.error("Error local player game accept:", error);
+        }
     }
 
     return (
-        <DndContext onDragEnd={handleDragEnd}>
-            <VStack>
-                <Text>Game Component</Text>
-                <Flex direction='column'> {/* STATE */}
-                    <Text>GAME STATE: {GAME_STATE}</Text>
-                    <Flex>
-                        <Text>FIRST PLAYER ID: {FIRST_PLAYER_ID || ''}</Text>
-                        <Text>SECOND PLAYER ID: {SECOND_PLAYER_ID || ''}</Text>
-                    </Flex>
-                    <Flex>
-                        <Text>CUBE 1: {CUBE_1 || ''}</Text>
-                        <Text>CUBE 2: {CUBE_2 || ''}</Text>
-                    </Flex>
-                    <Flex>
-                        <Text>CURRENT PLAYER ID: {CURRENT_PLAYER_ID || ''}</Text>
-                    </Flex>
-                    <Flex>
-                        <Text>MOVE COUNT: {MOVE_COUNT || ''}</Text>
-                    </Flex>
-                </Flex>
-                <Flex h={400} align='stretch'> {/* BOARD and OUT */}
-                    <Flex align='stretch'> {/* BOARD */}
-                        <Flex align='stretch'> {/* BOARD LEFT SIDE */}
-                            {convertedBoard.left.map((line) => (
-                                <Flex direction='column'> {/*LINE*/}
-                                    <SlotNumber>
-                                        {line[0].slotBordPosition}
-                                    </SlotNumber>
-                                    < DroppableGemeStack key={line[0].slotBordPosition} id={line[0].slotBordPosition} >
-                                        {
-                                            line[0].gameTrickIds.map((trickId) => (
-                                                // console.log("trick", trick),
-                                                <DraggableTrick
-                                                    key={trickId}
-                                                    id={trickId}
-                                                    color={line[0].blockOnColor!}
-                                                    disabled={false}
-                                                >
-                                                    T
-                                                </DraggableTrick>
-                                            ))
-                                        }
-                                    </DroppableGemeStack>
-                                    <Spacer />
-                                    < DroppableGemeStack key={line[1].slotBordPosition} id={line[1].slotBordPosition} >
-                                        {
-                                            line[1].gameTrickIds.map((trickId) => (
-                                                // console.log("trick", trick),
-                                                <DraggableTrick
-                                                    key={trickId}
-                                                    id={trickId}
-                                                    color={line[1].blockOnColor!}
-                                                    disabled={false}
-                                                >
-                                                    T
-                                                </DraggableTrick>
-                                            ))
-                                        }
-                                    </DroppableGemeStack>
-                                    <SlotNumber>
-                                        {line[1].slotBordPosition}
-                                    </SlotNumber>
-                                </Flex>
-                            ))}
+
+        <VStack>
+
+            <Flex gap={2} align='center'>
+                <DndContext onDragEnd={handleDragEnd}>
+                    <BoardAndOut convertedBoard={convertedBoard}></BoardAndOut>
+                </DndContext >
+                <Flex direction='column' gap='2'>
+                    <Flex direction='column' gap='1'> {/* STATE */}
+                        <Flex align='center'>
+                            <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                <TagLabel>GAME STATE</TagLabel>
+                            </Tag>
+                            <Badge size='lg'>{GAME_STATE}</Badge>
                         </Flex>
-                        <Flex align='stretch'> {/* BOARD RIGHT SIDE*/}
-                            {convertedBoard.right.map((line) => (
-                                <Flex direction='column'> {/*LINE*/}
-                                    <SlotNumber>
-                                        {line[0].slotBordPosition}
-                                    </SlotNumber>
-                                    < DroppableGemeStack key={line[0].slotBordPosition} id={line[0].slotBordPosition} >
-                                        {
-                                            line[0].gameTrickIds.map((trickId) => (
-                                                // console.log("trick", trick),
-                                                <DraggableTrick
-                                                    key={trickId}
-                                                    id={trickId}
-                                                    color={line[0].blockOnColor!}
-                                                    disabled={false}
-                                                >
-                                                    T
-                                                </DraggableTrick>
-                                            ))
-                                        }
-                                    </DroppableGemeStack>
-                                    <Spacer />
-                                    < DroppableGemeStack key={line[1].slotBordPosition} id={line[1].slotBordPosition} >
-                                        {
-                                            line[1].gameTrickIds.map((trickId) => (
-                                                // console.log("trick", trick),
-                                                <DraggableTrick
-                                                    key={trickId}
-                                                    id={trickId}
-                                                    color={line[1].blockOnColor!}
-                                                    disabled={false}
-                                                >
-                                                    T
-                                                </DraggableTrick>
-                                            ))
-                                        }
-                                    </DroppableGemeStack>
-                                    <SlotNumber>
-                                        {line[1].slotBordPosition}
-                                    </SlotNumber>
-                                </Flex>
-                            ))}
+                        <Flex gap={2}>
+                            <Flex align='center' direction='column'>
+                                <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                    <TagLabel>LOCAL PLAYER</TagLabel>
+                                </Tag>
+                                <Badge size='lg'>{LOCAL_PLAYER_ID ? LOCAL_PLAYER_ID : "undefined"}</Badge>
+                            </Flex>
+                            <Flex align='center' direction='column'>
+                                <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                    <TagLabel>REMOTE PLAYER</TagLabel>
+                                </Tag>
+                                <Badge size='lg'>{REMOTE_PLAYER_ID ? REMOTE_PLAYER_ID : "undefined"}</Badge>
+                            </Flex>
+
+                        </Flex>
+                        <Flex gap={2}>
+                            <Flex align='center' direction='column'>
+                                <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                    <TagLabel>FIRST PLAYER ID</TagLabel>
+                                </Tag>
+                                <Badge size='lg'>{FIRST_PLAYER_ID ? FIRST_PLAYER_ID : "undefined"}</Badge>
+                            </Flex>
+                            <Flex align='center' direction='column'>
+                                <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                    <TagLabel>SECOND_PLAYER_ID</TagLabel>
+                                </Tag>
+                                <Badge size='lg'>{SECOND_PLAYER_ID ? SECOND_PLAYER_ID : "undefined"}</Badge>
+                            </Flex>
+
+                        </Flex>
+                        <Flex gap={2}>
+                            <Flex align='center' direction='column' >
+                                <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                    <TagLabel>CUBE 1</TagLabel>
+                                </Tag>
+                                <Badge size='lg'>{CUBE_1 || "undefined"}</Badge>
+                            </Flex>
+                            <Flex align='center' direction='column'>
+                                <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                    <TagLabel>CUBE 2</TagLabel>
+                                </Tag>
+                                <Badge size='lg'>{CUBE_2 || "undefined"}</Badge>
+                            </Flex>
+
+                        </Flex>
+                        <Flex align='center'>
+                            <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                <TagLabel>CURRENT PLAYER</TagLabel>
+                            </Tag>
+                            <Badge size='lg'>{CURRENT_PLAYER_ID || 'undefined'}</Badge>
+                        </Flex>
+                        <Flex align='center'>
+                            <Tag size='lg' colorScheme='orange' borderRadius='full'>
+                                <TagLabel>MOVE COUNT</TagLabel>
+                            </Tag>
+                            <Badge size='lg'>{MOVE_COUNT || 'undefined'}</Badge>
                         </Flex>
                     </Flex>
-                    <Flex direction='column'> {/* OUT */}
-                        <SlotNumber>
-                            {convertedBoard.out[0].slotBordPosition}
-                        </SlotNumber>
-                        < DroppableGemeStack key={convertedBoard.out[0].slotBordPosition} id={convertedBoard.out[0].slotBordPosition} >
-                            {
-                                convertedBoard.out[0].gameTrickIds.map((trickId) => (
-                                    // console.log("trick", trick),
-                                    <DraggableTrick
-                                        key={trickId}
-                                        id={trickId}
-                                        color={convertedBoard.out[0].blockOnColor!}
-                                        disabled={false}
-                                    >
-                                        T
-                                    </DraggableTrick>
-                                ))
-                            }
-                        </DroppableGemeStack>
-                        <Spacer />
-                        < DroppableGemeStack key={convertedBoard.out[1].slotBordPosition} id={convertedBoard.out[1].slotBordPosition} >
-                            {
-                                convertedBoard.out[1].gameTrickIds.map((trickId) => (
-                                    // console.log("trick", trick),
-                                    <DraggableTrick
-                                        key={trickId}
-                                        id={trickId}
-                                        color={convertedBoard.out[1].blockOnColor!}
-                                        disabled={false}
-                                    >
-                                        T
-                                    </DraggableTrick>
-                                ))
-                            }
-                        </DroppableGemeStack>
-                        <SlotNumber>
-                            {convertedBoard.out[1].slotBordPosition}
-                        </SlotNumber>
+
+                    <Flex gap='2' direction='column'>  {/* CONTROLS */}
+                        <ButtonGroup gap='2'>
+                            <Button onClick={acceptLocal} colorScheme='orange'>Accept local</Button>
+                            <Button onClick={acceptRemote} colorScheme='orange'>Accept remote</Button>
+                        </ButtonGroup>
+                        <ButtonGroup gap='2'>
+                            <Button onClick={prioritizeLocal} colorScheme='orange'>Local prior</Button>
+                            <Button onClick={prioritizeRemote} colorScheme='orange'>Remote prior</Button>
+                        </ButtonGroup>
+                        <ButtonGroup>
+
+                            <Button onClick={handleRoollCubes} colorScheme='orange'>roollCubes</Button>
+                        </ButtonGroup>
                     </Flex>
 
-
                 </Flex>
-                <Wrap spacing={4}>
-                    <WrapItem>
-                        <Button onClick={handleClickSetLocalPlayer}>Set local player id {LOCAL_PLAYER_ID}</Button>
-                    </WrapItem>
-                    <WrapItem>
-                        <Button onClick={handleClickSetRemotePlayer}>Set remote player id {REMOTE_PLAYER_ID}</Button>
-                    </WrapItem>
-                    <WrapItem>
-                        <InputGroup size='md'>
-                            <Input
-                                pr='4.5rem'
-                                type='text'
-                                value={firstPlayerID}
-                                placeholder='Enter player ID'
-                                onChange={handleChangeInputFirstPlayerID}
-                            />
-                            <InputRightElement width='4.5rem'>
-                                <Button onClick={handlePrioritizationByFirstPlayer}>
-                                    prior first player
-                                </Button>
-                            </InputRightElement>
-                        </InputGroup>
-                    </WrapItem>
-                    <WrapItem>
-                        <InputGroup size='md'>
-                            <Input
-                                pr='4.5rem'
-                                type='text'
-                                value={secondPlayerID}
-                                placeholder='Enter player ID'
-                                onChange={handleChangeInputSecondPlayerID}
 
-                            />
-                            <InputRightElement width='4.5rem'>
-                                <Button onClick={handlePrioritizationBySecondPlayer}>
-                                    prior second player
-                                </Button>
-                            </InputRightElement>
-                        </InputGroup>
-                    </WrapItem>
-
-                    <WrapItem>
-                        <Button>roollCubes</Button>
-                    </WrapItem>
-                    <WrapItem>
-                        <Button>moveTrick</Button>
-                    </WrapItem>
-                </Wrap>
-            </VStack>
-        </DndContext >
+            </Flex>
+        </VStack>
     );
 
     // function handleDragEnd(event: DragEndEvent) { }
 
-    function handleDragEnd(event: DragEndEvent) {
-        // console.log("drag end");
-        const { active, over } = event;
-        if (!over) {
-            return;
-        }
-        // console.log("drag end", active.id, over.id);
 
-        game?.moveTrick(active.id as number, over.id as number)
-
-        setGameState(deepCopy(game))
-
-
-    }
 }
 
-type BOARD_LINE = [GameSlot, GameSlot];
-type BOARD_HALF = [BOARD_LINE, BOARD_LINE, BOARD_LINE, BOARD_LINE, BOARD_LINE, BOARD_LINE]
-
-type CONVERTED_BOARD = {
-    left: BOARD_HALF,
-    right: BOARD_HALF,
-    out: BOARD_LINE,
-}
-
-type SLOT_NUMBER = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24
-type OUT = [25, 0] | [0, 25]
-
-type CONVERTING_SCHEME_HALF = [
-    CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE
-]
-
-type CONVERTING_SCHEME_LINE = [
-    SLOT_NUMBER, SLOT_NUMBER
-]
-
-type CONVERTING_SCHEME_BOARD = {
-    left: CONVERTING_SCHEME_HALF,
-    right: CONVERTING_SCHEME_HALF,
-    out: OUT,
-}
 
 function convertGameLine(
-    gameLine: GameLine,
+    gameLine: GameLineForUI,
     localPlayerId: string,
     firstPlayerId: string,
 ): CONVERTED_BOARD {
@@ -409,7 +344,7 @@ function convertGameLine(
         right: [
             [19, 6], [20, 5], [21, 4], [22, 3], [23, 2], [24, 1]
         ],
-        out: [0, 25],
+        out: [25, 0],
     }
     const smalerTopScheme: CONVERTING_SCHEME_BOARD = { // smaler top
         left: [
@@ -418,7 +353,7 @@ function convertGameLine(
         right: [
             [7, 18], [8, 17], [9, 16], [10, 15], [11, 14], [12, 13],
         ],
-        out: [25, 0],
+        out: [0, 25],
     }
 
     if (localPlayerId === firstPlayerId) {
@@ -428,10 +363,10 @@ function convertGameLine(
 }
 
 
-function _convertGameLine(gameLine: GameLine, scheme: CONVERTING_SCHEME_BOARD): CONVERTED_BOARD {
+function _convertGameLine(gameLine: GameLineForUI, scheme: CONVERTING_SCHEME_BOARD): CONVERTED_BOARD {
 
-    scheme.left.map((line) => line.map((num) => gameLine[num]))
-    scheme.right.map((line) => [gameLine[line[0]], gameLine[line[1]]])
+    // scheme.left.map((line) => line.map((num) => gameLine[num]))
+    // scheme.right.map((line) => [gameLine[line[0]], gameLine[line[1]]])
 
     const gameBordLiout: CONVERTED_BOARD = {
         left: scheme.left.map((line) => line.map((num) => (gameLine[num]))) as BOARD_HALF,
@@ -441,43 +376,43 @@ function _convertGameLine(gameLine: GameLine, scheme: CONVERTING_SCHEME_BOARD): 
     return gameBordLiout;
 }
 
-function deepCopy<T>(instance: T): T {
-    if (instance == null) {
-        return instance;
-    }
+// function deepCopy<T>(instance: T): T {
+//     if (instance == null) {
+//         return instance;
+//     }
 
-    // handle Dates
-    if (instance instanceof Date) {
-        return new Date(instance.getTime()) as any;
-    }
+//     // handle Dates
+//     if (instance instanceof Date) {
+//         return new Date(instance.getTime()) as any;
+//     }
 
-    // handle Functions
-    if (instance instanceof Function) {
-        console.log('function', instance)
-        return instance as any;
-    }
+//     // handle Functions
+//     if (instance instanceof Function) {
+//         console.log('function', instance)
+//         return instance as any;
+//     }
 
-    // handle Array types
-    if (instance instanceof Array) {
-        var cloneArr = [] as any[];
-        (instance as any[]).forEach((value) => { cloneArr.push(value) });
-        // for nested objects
-        return cloneArr.map((value: any) => deepCopy<any>(value)) as any;
-    }
-    // handle objects
-    if (instance instanceof Object) {
-        var copyInstance = {
-            ...(instance as { [key: string]: any }
-            )
-        } as { [key: string]: any };
-        for (var attr in instance) {
-            console.log("attr", attr);
-            if ((instance as Object).hasOwnProperty(attr))
-                copyInstance[attr] = deepCopy<any>((instance as any)[attr]);
-        }
-        return copyInstance as T;
-    }
-    // handling primitive data types
-    return instance;
-}
+//     // handle Array types
+//     if (instance instanceof Array) {
+//         var cloneArr = [] as any[];
+//         (instance as any[]).forEach((value) => { cloneArr.push(value) });
+//         // for nested objects
+//         return cloneArr.map((value: any) => deepCopy<any>(value)) as any;
+//     }
+//     // handle objects
+//     if (instance instanceof Object) {
+//         var copyInstance = {
+//             ...(instance as { [key: string]: any }
+//             )
+//         } as { [key: string]: any };
+//         for (var attr in instance) {
+//             // console.log("attr", attr);
+//             if ((instance as Object).hasOwnProperty(attr))
+//                 copyInstance[attr] = deepCopy<any>((instance as any)[attr]);
+//         }
+//         return copyInstance as T;
+//     }
+//     // handling primitive data types
+//     return instance;
+// }
 

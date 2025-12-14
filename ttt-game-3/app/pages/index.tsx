@@ -22,12 +22,12 @@ export default function Home() {
 
 
   return (
-    <Box bg='gray.100' id="box" h='100%'>
+    <Box bg='gray.100' id="box" h='100%' >
       <Flex px={4} py={4} bg='gray.200'>
         <Spacer bg='gray.300' />
         <WalletMultiButton />
       </Flex>
-      <VStack>
+      <VStack justify='center'>
         <Heading bg='gray.300'>TttGame3</Heading>
         {!publicKey && <Text bg='gray.300'>Connect to devnet wallet!</Text>}
         <DisplayGameState />
@@ -37,13 +37,13 @@ export default function Home() {
         <RequestAirdrop />
         <DisplayNfts />
 
-        <TTTGameStateProvider_2 >
-
-          <GameComponent />
-          {/* <Game_2 /> */}
-        </TTTGameStateProvider_2>
 
       </VStack>
+      <TTTGameStateProvider_2 >
+
+        <GameComponent />
+        {/* <Game_2 /> */}
+      </TTTGameStateProvider_2>
     </Box >
   )
 

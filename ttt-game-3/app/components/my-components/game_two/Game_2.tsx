@@ -17,7 +17,7 @@ import { SlotNumber } from "./SlotNumber";
 
 
 export function Game_2() {
-    const { game } = useGameState();
+    const { gameState: game } = useGameState();
     const [gameState, setGameState] = useState(game?.clone());
     const [localPlayerID, setLocalPlayerID] = useState('')
     const [remotePlayerID, setRemotePlayerID] = useState('')

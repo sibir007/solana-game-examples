@@ -15,24 +15,17 @@ import { BN } from "@coral-xyz/anchor";
 
 
 import {
-  TrickColor,
-  GameTrick,
-  GameSlot,
-  GameBoard,
-  GameState as GameStateType,
-  Player,
-  TricksSet,
-  GameCube,
-  Game,
-  PlayerVictoryStatus
-} from "@/types/game";
-import type {StateOfCube} from "@/types/game";
-// import { Game } from '../components/my-components/Game';
+  Game, type GameStateForUI
+} from "@/types/game_2";
+
+
+
+export const game = new Game();
 
 interface TTTGameStateContextType_2 {
     //   playerDataPDA: PublicKey | null;
-    game: Game | null;
-    setGameState: (newGameState: Game) => void;
+    gameState: GameStateForUI;
+    setGameState: (newGameState: GameStateForUI) => void;
     //   nextEnergyIn: number;
     //   totalWoodAvailable: number | null;
 }
@@ -48,13 +41,13 @@ export const TTTGameStateProvider = ({
     children: React.ReactNode;
 }) => {
 
-    const [gameState, setGameState] = useState<Game | null>(new Game());
+    const [gameState, setGameState] = useState<GameStateForUI>(game.cloneForUI());
 
     return (
         <TTTGameStateContext.Provider
             value={{
                 // playerDataPDA,
-                game: gameState,
+                gameState: gameState,
                 setGameState: setGameState,
                 // nextEnergyIn,
                 // totalWoodAvailable,

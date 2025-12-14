@@ -1,0 +1,29 @@
+import { GameSlotForUI } from "./game_2";
+
+export type BOARD_LINE = [GameSlotForUI, GameSlotForUI];
+
+export type BOARD_HALF = [BOARD_LINE, BOARD_LINE, BOARD_LINE, BOARD_LINE, BOARD_LINE, BOARD_LINE]
+
+export type CONVERTED_BOARD = {
+    left: BOARD_HALF,
+    right: BOARD_HALF,
+    out: BOARD_LINE,
+}
+
+export type SLOT_NUMBER = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24
+export type OUT = [25, 0] | [0, 25]
+
+export type CONVERTING_SCHEME_HALF = [
+    CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE, CONVERTING_SCHEME_LINE
+]
+
+export type CONVERTING_SCHEME_LINE = [
+    SLOT_NUMBER, SLOT_NUMBER
+]
+
+export type CONVERTING_SCHEME_BOARD = {
+    left: CONVERTING_SCHEME_HALF,
+    right: CONVERTING_SCHEME_HALF,
+    out: OUT,
+}
+
